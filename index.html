@@ -1,0 +1,143 @@
+<head>
+  <style>body { margin: 0; }</style>
+
+  <script src="//unpkg.com/aframe"></script>
+  <script src="//unpkg.com/ar.js/aframe/build/aframe-ar.min.js"></script>
+
+  <script src="//unpkg.com/3d-force-graph-ar"></script>
+
+  <script src="//unpkg.com/d3-dsv"></script>
+  <script src="//unpkg.com/d3-fetch"></script>
+
+  <script src="//unpkg.com/3d-force-graph@1"></script>
+  <script src="//unpkg.com/d3-octree"></script>
+  <script src="//unpkg.com/d3-force-3d"></script>
+
+<!--  <script src="../../dist/3d-force-graph-ar.js"></script>-->
+</head>
+
+<body>
+  <div id="3d-graph"></div>
+
+  <script>
+    // Random tree
+
+    const LEVELS_GAP = 220
+    const HEIGHT_OFFSET = 300
+    const NODE_REL_SIZE = 1
+
+
+    d3.csv('tree_path_size_to_url.csv').then(data => {
+      const nodes = [], links = [];
+      data.forEach(({ size, path }) => {
+        const levels = path.split('/'),
+          level = levels.length - 1,
+          module = level > 0 ? levels[1] : null,
+          leaf = levels.pop(),
+          parent = levels.join('/');
+
+        const node = {
+          path,
+          leaf,
+          module,
+          size: +size || 20,
+          fy: HEIGHT_OFFSET -level * LEVELS_GAP
+        };
+
+        nodes.push(node);
+
+        if (parent) {
+          links.push({ source: parent, target: path, targetNode: node });
+        }
+      });
+
+
+      const N = 200
+      const nodes_easy = [...Array(N).keys()].map(i => ({ id: i }));
+      const links_easy = [...Array(N).keys()]
+        .filter(id => id)
+        .map(id => ({
+          source: id,
+          target: Math.round(Math.random() * (id-1))
+        }))
+
+      const elem = document.getElementById('3d-graph');
+
+      /*const Graph = ForceGraph3D() //ForceGraphAR
+        (elem)
+        .nodeRelSize(10)
+        .nodeOpacity(0.9)
+        .nodeColor(() => 'blue')
+        .linkColor(() => 'darkgrey')
+        .graphData({ nodes: nodes, links: links});*/
+
+        const Graph = ForceGraphAR()
+        (elem)
+        .nodeRelSize(NODE_REL_SIZE)
+        .nodeId('path')
+        .nodeVal('size')
+        .nodeAutoColorBy('module')
+        .nodeOpacity(0.9)
+        .linkWidth(3)
+        .linkColor(d => d.targetNode.color)
+        .d3Force('collision', d3.forceCollide(node => Math.cbrt(node.size) * NODE_REL_SIZE))
+        .graphData({ nodes: nodes, links: links });
+    });
+
+/*
+    const data = FileAttachment("tree_path_size_to_url-8.csv").csv()
+
+    const links = []
+    const nodes = []
+
+    data.forEach(({ size, path }) => {
+      const levels = path.split('/'),
+            level = levels.length - 1,
+            module = level > 0 ? levels[1] : null,
+            leaf = levels.pop(),
+            parent = levels.join('/'),
+            img_show = false;
+
+      const node = {
+        path,
+        leaf,
+        module,
+        img_show,
+        size: 20*size,// || 20,
+        fy: HEIGHT_OFFSET -level * LEVELS_GAP
+      };
+      nodes.push(node);
+
+      if (parent) {
+        links.push({ source: parent, target: path, targetNode: node });
+      }
+    })
+*/
+/*
+    const N = 200;
+    const gData = {
+      nodes: [...Array(N).keys()].map(i => ({ id: i })),
+      links: [...Array(N).keys()]
+        .filter(id => id)
+        .map(id => ({
+          source: id,
+          target: Math.round(Math.random() * (id-1))
+        }))
+    };
+
+    const Graph = ForceGraphAR()
+      (document.getElementById('3d-graph'))
+        .graphData({nodes:nodes, links:links}})
+        .nodeId('path')
+        .nodeVal('size')
+        .nodeLabel('leaf')
+        //.nodeRelSize(10)
+        .linkWidth(3)
+        .nodeOpacity(0.9)
+        .linkOpacity(0.4)
+        //.nodeColor(() => 'blue')
+        .nodeAutoColorBy('module')
+        .linkColor(() => 'darkgrey');
+*/
+  </script>
+</body>
