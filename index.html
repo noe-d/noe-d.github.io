@@ -71,14 +71,15 @@
         .linkColor(() => 'darkgrey')
         .graphData({ nodes: nodes, links: links});*/
 
-        const Graph = ForceGraphAR()
+        const Graph = ForceGraphAR({preset: "custom", markerAttrs: { type:'pattern', url:'pattern_kodama.patt'}})
         (elem)
         .nodeRelSize(NODE_REL_SIZE)
         .nodeId('path')
         .nodeVal('size')
         .nodeAutoColorBy('module')
         .nodeOpacity(0.9)
-        .linkWidth(3)
+        .linkWidth(5)
+        .linkOpacity(0.4)
         .linkColor(d => d.targetNode.color)
         .d3Force('collision', d3.forceCollide(node => Math.cbrt(node.size) * NODE_REL_SIZE))
         .graphData({ nodes: nodes, links: links });
