@@ -22,9 +22,9 @@
   <script>
     // Random tree
 
-    const LEVELS_GAP = 220
-    const HEIGHT_OFFSET = 300
-    const NODE_REL_SIZE = 1
+    const LEVELS_GAP = 300
+    const HEIGHT_OFFSET = 1000
+    const NODE_REL_SIZE = 5
 
 
     d3.csv('tree_path_size_to_url.csv').then(data => {
@@ -52,93 +52,22 @@
       });
 
 
-      const N = 200
-      const nodes_easy = [...Array(N).keys()].map(i => ({ id: i }));
-      const links_easy = [...Array(N).keys()]
-        .filter(id => id)
-        .map(id => ({
-          source: id,
-          target: Math.round(Math.random() * (id-1))
-        }))
-
       const elem = document.getElementById('3d-graph');
-
-      /*const Graph = ForceGraph3D() //ForceGraphAR
-        (elem)
-        .nodeRelSize(10)
-        .nodeOpacity(0.9)
-        .nodeColor(() => 'blue')
-        .linkColor(() => 'darkgrey')
-        .graphData({ nodes: nodes, links: links});*/
 
         const Graph = ForceGraphAR({preset: "custom", markerAttrs: { type:'pattern', url:'pattern_kodama.patt'}})
         (elem)
         .nodeRelSize(NODE_REL_SIZE)
+        .cooldownTime(45000)
         .nodeId('path')
         .nodeVal('size')
         .nodeAutoColorBy('module')
         .nodeOpacity(0.9)
-        .linkWidth(5)
+        .linkWidth(10)
         .linkOpacity(0.4)
         .linkColor(d => d.targetNode.color)
         .d3Force('collision', d3.forceCollide(node => Math.cbrt(node.size) * NODE_REL_SIZE))
         .graphData({ nodes: nodes, links: links });
     });
 
-/*
-    const data = FileAttachment("tree_path_size_to_url-8.csv").csv()
-
-    const links = []
-    const nodes = []
-
-    data.forEach(({ size, path }) => {
-      const levels = path.split('/'),
-            level = levels.length - 1,
-            module = level > 0 ? levels[1] : null,
-            leaf = levels.pop(),
-            parent = levels.join('/'),
-            img_show = false;
-
-      const node = {
-        path,
-        leaf,
-        module,
-        img_show,
-        size: 20*size,// || 20,
-        fy: HEIGHT_OFFSET -level * LEVELS_GAP
-      };
-      nodes.push(node);
-
-      if (parent) {
-        links.push({ source: parent, target: path, targetNode: node });
-      }
-    })
-*/
-/*
-    const N = 200;
-    const gData = {
-      nodes: [...Array(N).keys()].map(i => ({ id: i })),
-      links: [...Array(N).keys()]
-        .filter(id => id)
-        .map(id => ({
-          source: id,
-          target: Math.round(Math.random() * (id-1))
-        }))
-    };
-
-    const Graph = ForceGraphAR()
-      (document.getElementById('3d-graph'))
-        .graphData({nodes:nodes, links:links}})
-        .nodeId('path')
-        .nodeVal('size')
-        .nodeLabel('leaf')
-        //.nodeRelSize(10)
-        .linkWidth(3)
-        .nodeOpacity(0.9)
-        .linkOpacity(0.4)
-        //.nodeColor(() => 'blue')
-        .nodeAutoColorBy('module')
-        .linkColor(() => 'darkgrey');
-*/
   </script>
 </body>
