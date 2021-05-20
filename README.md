@@ -19,7 +19,11 @@ Possible interactions with the components of the tree are the following:
 - cmd+click or ctrl+click on leaf: open in new window the page of the illustration within the book it originally appeared, on the archived volume hosted on BHL website (please use this command if you want more correct and more complete informations than displayed in the caption)
 - left-click on link: focus on target node
 
-The [second one](https://noe-d.github.io) is a coarse extension of the first tree into an AR module. It was implemented thanks to [3D Force-Directed Graph in AR](https://github.com/vasturiano/3d-force-graph-ar) which makes use of [AR.js](https://github.com/jeromeetienne/AR.js) with [A-frame](https://aframe.io) for rendering.
+The [second one](https://noe-d.github.io) is a coarse extension of the first tree into an AR module. It was implemented thanks to [3D Force-Directed Graph in AR](https://github.com/vasturiano/3d-force-graph-ar) which makes use of [AR.js](https://github.com/jeromeetienne/AR.js) with [A-frame](https://aframe.io) for rendering. To load this AR extension, make sure that the camera of the device on which you want to test it points toward the image of the marker displayed below:
+
+<p align="center">
+  <a href=""><img width="50%" src="pattern_kodama.png"></a>
+</p>
 
 ---
 
