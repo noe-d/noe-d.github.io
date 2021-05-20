@@ -1,0 +1,207 @@
+<head>
+  <style>body { margin: 0; }</style>
+
+  <script src="//unpkg.com/three"></script>
+  <script src="//unpkg.com/three-spritetext"></script>
+
+
+  <script src="//unpkg.com/d3-dsv"></script>
+  <script src="//unpkg.com/d3-fetch"></script>
+
+  <!--  <script src="//unpkg.com/3d-force-graph@1"></script>-->
+  <script src="//unpkg.com/d3-octree"></script>
+  <script src="//unpkg.com/d3-force-3d"></script>
+  <script src="//unpkg.com/3d-force-graph"></script>
+
+<!--  <script src="../../dist/3d-force-graph-ar.js"></script>-->
+</head>
+
+<body>
+  <div id="3d-graph"></div>
+
+  <script>
+    // Random tree
+
+    const LEVELS_GAP = 220
+    const HEIGHT_OFFSET = 300
+    const NODE_REL_SIZE = 1
+
+
+    d3.csv('tree_path_size_to_url_bhl_artist_book_year.csv').then(data => {
+      const nodes = [], links = [];
+      data.forEach(({ size, path, link_bhl, artist, book, year }) => {
+        const levels = path.split('/'),
+              level = levels.length - 1,
+              kingdom = level > 0 ? levels[1] : null,
+              leaf = levels.pop(),
+              parent = levels.join('/'),
+              bhl_url = link_bhl,
+              book_ = book,
+              year_ = year,
+              artist_ = artist,
+              img_show = false,
+              info_show = false;
+
+        const node = {
+          path,
+          leaf,
+          kingdom,
+          bhl_url,
+          book_,
+          year_,
+          artist_,
+          img_show,
+          info_show,
+          size: 20*size,// || 20,
+          fy: HEIGHT_OFFSET -level * LEVELS_GAP
+        };
+        nodes.push(node);
+
+        if (parent) {
+          links.push({ source: parent, target: path, targetNode: node });
+        }
+      });
+
+
+      const elem = document.getElementById('3d-graph');
+
+      let selectedNodes = new Set();
+      var selectedRank = "None";
+      const commonRank = 3;
+      const linkWidth = 5;
+      const yShiftIm = -5;
+      const selectedArtist = "None";
+      const prevRightClicked = [nodes[0]];
+
+      const forceGraph = ForceGraph3D({ controlType: 'orbit' })(elem)
+      .height(screen.height)
+      .width(screen.width)
+      .nodeRelSize(NODE_REL_SIZE)
+      .nodeId('path')
+      .nodeVal('size')
+      .nodeLabel(node => {
+        const levels = node.path.split('/');
+        return (levels.length!==8) ? node.leaf : node.artist_
+      })
+      .nodeAutoColorBy('kingdom')
+      .nodeThreeObject(node => {
+        const levels = node.path.split('/');
+        if (levels.length == 8) {
+          if (node.img_show) {
+            const url_im = levels[levels.length-1].replaceAll("|","/")
+
+            const obj = new THREE.Mesh();
+            // add img sprite (illustration) as child
+            const imgTexture = new THREE.TextureLoader().load(url_im);
+            const material = new THREE.SpriteMaterial({ map: imgTexture});
+            const sprite = new THREE.Sprite(material);
+            sprite.scale.set(10, 10, 1);
+            sprite.position.set(0, yShiftIm, 0);
+            obj.add(sprite)
+
+            // if needed: add spritetext (caption) as child
+            if (node.info_show) {
+              const spritetext = new SpriteText(`Artist: ${node.artist_}\nBook: ${node.book_}\nDate: ${Math.round(node.year_)}`);
+              spritetext.material.depthWrite = true; // make sprite background transparent
+              spritetext.color = "lightgrey";//node.color;
+              spritetext.textHeight = 0.5;
+              spritetext.position.set(0, yShiftIm-6, 0);
+              obj.add(spritetext);
+            }
+            return obj;
+          }
+        }
+      })
+      .nodeOpacity(0.99)
+      .linkColor(d => d.targetNode.color)
+      .linkWidth(linkWidth)
+      .onLinkClick((link,event) => {
+        const levels = link.targetNode.path.split('/');
+        const rankDepth = levels.length;
+        const distance = (rankDepth===8) ? 7 : 4.2*Math.cbrt(link.targetNode.size);
+        const distRatio = 1 + distance;
+        const yPos = link.targetNode.y;
+        const xPos = link.targetNode.x;
+        const zPos = link.targetNode.z;
+
+        // MOVE CAMERA TOWARDS TARGET NODE
+        forceGraph.cameraPosition(
+          { x: xPos +(xPos/Math.abs(xPos))*distRatio
+           , y: yPos
+           , z: zPos +(zPos/Math.abs(zPos))*distRatio
+          }, // new position
+          link.targetNode, // lookAt ({ x, y, z }) (xPos, yPos, zPos), //
+          1500  // ms transition duration
+        )
+      })
+      .onNodeClick((node, event) => {
+        const levels = node.path.split('/');
+        const rankDepth = levels.length;
+        const distance = (rankDepth===8) ? 7 : 4.2*Math.cbrt(node.size);
+        const distRatio = 1 + distance;
+        const yPos = (rankDepth===8) ? node.y+yShiftIm : node.y;
+        const xPos = node.x;
+        const zPos = node.z;
+
+        // MOVE CAMERA
+        forceGraph.cameraPosition(
+          { x: xPos +(xPos/Math.abs(xPos))*distRatio
+           , y: yPos
+           , z: zPos +(zPos/Math.abs(zPos))*distRatio
+          }, // new position
+          { x: xPos, y: yPos, z: zPos}, // lookAt ({ x, y, z })
+          3000  // ms transition duration
+        )
+
+        // IF LEAF: DISPLAY ILLUSTRATIONS
+        if (rankDepth == 8) {
+          const rank = levels[commonRank]
+          // if not same rank as before, re-render illustrations
+          if (rank !== selectedRank) {
+            selectedRank = rank
+            nodes.forEach(node_loop => {
+              node_loop.img_show = (node_loop.path.split('/')[commonRank]===rank)
+            })
+            forceGraph.nodeThreeObject(forceGraph.nodeThreeObject());
+          }
+          // if special click: open in BHL
+          if (event.ctrlKey ||event.metaKey) {
+            window.open(node.bhl_url);
+          }
+        }
+      })
+      .onNodeRightClick((node, event) => {
+        // DISPLAY TEXTUAL INFORMATIONS
+        prevRightClicked[0].info_show = false;
+        prevRightClicked.splice(0, prevRightClicked.length)
+
+        prevRightClicked.push(node)
+        node.info_show = true;
+
+        forceGraph.nodeThreeObject(forceGraph.nodeThreeObject());
+
+        // MOVE CAMERA (step back to see caption)
+        if (node.path.split('/').length===8) {
+          const distance = 10;
+          const distRatio = 1 + distance;
+          const yPos = node.y+yShiftIm;
+          const xPos = node.x;
+          const zPos = node.z;
+          forceGraph.cameraPosition(
+            { x: xPos +(xPos/Math.abs(xPos))*distRatio
+             , y: yPos
+             , z: zPos +(zPos/Math.abs(zPos))*distRatio
+            }, // new position
+            { x: xPos, y: yPos, z: zPos}, // lookAt ({ x, y, z })
+            2000  // ms transition duration
+          )
+        }
+
+      })
+      .enableNodeDrag(false)
+      .showNavInfo(false)
+      .d3Force('collision', d3.forceCollide(node => Math.cbrt(node.size) * NODE_REL_SIZE))
+      .graphData({ nodes: nodes, links: links });
+    });
+  </script>
+</body>
