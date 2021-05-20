@@ -27,4 +27,4 @@ Use the following links to explore these propositions of visualization of BHL's 
 1. [KODAMA — 3D tree](https://noe-d.github.io/KODAMA): https://noe-d.github.io/KODAMA
 2. [KODAMA — AR extension](https://noe-d.github.io): https://noe-d.github.io
 
-<sub>Disclairmer: the visualization window might not show the full canvas when not seen in fullscreen.<\sub>
+<sub>Disclairmer: the visualization window might not show the full canvas.
